@@ -1,0 +1,26 @@
+name of author
+subject to the terms and conditions of
+^holder(?:s|,)? 
+<br>
+\$\{inceptionYear\}
+# The below are part of the Apache
+-2.0 license text
+^notice that is included in or attached to the work
+^owner
+^license
+^notice
+^, patent, trademark
+^statement to your modifications and
+name of copyright owner
+# The below are part of the EPL v2.0 license text
+^rights in its Contribution, if any, to grant
+^owner or entity authorized by
+^license set forth
+^the software
+^law: that is
+^disclaimer"
+interest in the
+# The below is part of the GPL v2 license text
+^1989, 1991 Free Software Foundation, Inc.
+# The below is part of the EDL v1.0 license text
+^2007, Eclipse Foundation, Inc. and its licensors.

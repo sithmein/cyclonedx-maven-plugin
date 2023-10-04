@@ -18,6 +18,19 @@
  */
 package org.cyclonedx.maven;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
@@ -42,18 +55,6 @@ import org.cyclonedx.parsers.JsonParser;
 import org.cyclonedx.parsers.Parser;
 import org.cyclonedx.parsers.XmlParser;
 import org.eclipse.aether.RepositorySystem;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 public abstract class BaseCycloneDxMojo extends AbstractMojo {
 
@@ -205,6 +206,15 @@ public abstract class BaseCycloneDxMojo extends AbstractMojo {
     private boolean verbose = false;
 
     /**
+     * Copyright detection in license and notice files.
+     *
+     * @since 2.8.0
+     */
+    @SuppressWarnings("CanBeFinal")
+    @Parameter(property = "extractCopyrights", defaultValue = "false", required = false)
+    private boolean extractCopyrights = false;
+
+    /**
      * Timestamp for reproducible output archive entries, either formatted as ISO 8601
      * <code>yyyy-MM-dd'T'HH:mm:ssXXX</code> or as an int representing seconds since the epoch (like
      * <a href="https://reproducible-builds.org/docs/source-date-epoch/">SOURCE_DATE_EPOCH</a>).
@@ -248,7 +258,7 @@ public abstract class BaseCycloneDxMojo extends AbstractMojo {
     }
 
     protected Component convert(Artifact artifact) {
-        return modelConverter.convert(artifact, schemaVersion(), includeLicenseText);
+        return modelConverter.convert(artifact, schemaVersion(), includeLicenseText, extractCopyrights);
     }
 
     /**
@@ -262,7 +272,8 @@ public abstract class BaseCycloneDxMojo extends AbstractMojo {
      */
     protected abstract String extractComponentsAndDependencies(Set<String> topLevelComponents, Map<String, Component> components, Map<String, Dependency> dependencies) throws MojoExecutionException;
 
-    public void execute() throws MojoExecutionException {
+    @Override
+	public void execute() throws MojoExecutionException {
         final boolean shouldSkip = Boolean.parseBoolean(System.getProperty("cyclonedx.skip", Boolean.toString(skip)));
         if (shouldSkip) {
             getLog().info("Skipping CycloneDX");
@@ -277,7 +288,8 @@ public abstract class BaseCycloneDxMojo extends AbstractMojo {
 
         String analysis = extractComponentsAndDependencies(topLevelComponents, componentMap, dependencyMap);
         if (analysis != null) {
-            final Metadata metadata = modelConverter.convert(project, projectType, schemaVersion(), includeLicenseText);
+			final Metadata metadata = modelConverter.convert(project, projectType, schemaVersion(), includeLicenseText,
+					extractCopyrights);
 
             if (schemaVersion().getVersion() >= 1.3) {
                 metadata.addProperty(newProperty("maven.goal", analysis));

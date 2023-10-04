@@ -34,6 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.MailingList;
 import org.apache.maven.model.building.ModelBuildingRequest;
@@ -78,6 +79,9 @@ public class DefaultModelConverter implements ModelConverter {
     @Inject
     private ProjectBuilder mavenProjectBuilder;
 
+    @Inject
+    private ArtifactHandlerManager artifactHandlerManager;
+    
     public DefaultModelConverter() {
     }
 
@@ -153,7 +157,8 @@ public class DefaultModelConverter implements ModelConverter {
     }
 
     @Override
-    public Component convert(Artifact artifact, CycloneDxSchema.Version schemaVersion, boolean includeLicenseText) {
+	public Component convert(Artifact artifact, CycloneDxSchema.Version schemaVersion, boolean includeLicenseText,
+			boolean extractCopyrights) {
         final Component component = new Component();
         component.setGroup(artifact.getGroupId());
         component.setName(artifact.getArtifactId());
@@ -176,7 +181,7 @@ public class DefaultModelConverter implements ModelConverter {
             try {
                 final MavenProject project = getEffectiveMavenProject(artifact);
                 if (project != null) {
-                    extractComponentMetadata(project, component, schemaVersion, includeLicenseText);
+                    extractComponentMetadata(project, component, schemaVersion, includeLicenseText, extractCopyrights);
                 }
             } catch (ProjectBuildingException e) {
                 if (logger.isDebugEnabled()) {
@@ -209,7 +214,8 @@ public class DefaultModelConverter implements ModelConverter {
      * @param project the project to extract data from
      * @param component the component to add data to
      */
-    private void extractComponentMetadata(MavenProject project, Component component, CycloneDxSchema.Version schemaVersion, boolean includeLicenseText) {
+	private void extractComponentMetadata(MavenProject project, Component component,
+			CycloneDxSchema.Version schemaVersion, boolean includeLicenseText, boolean extractCopyrights) {
         if (component.getPublisher() == null) {
             // If we don't already have publisher information, retrieve it.
             if (project.getOrganization() != null) {
@@ -252,9 +258,15 @@ public class DefaultModelConverter implements ModelConverter {
             if (project.getScm() != null) {
                 addExternalReference(ExternalReference.Type.VCS, project.getScm().getUrl(), component);
             }
+            if (extractCopyrights) {
+				component.setCopyright(CopyrightExtrator.getInstance().extractCopyright(project, repositorySystem,
+						artifactHandlerManager).orElse(null));
+            }
         }
     }
 
+
+	
     /**
      * This method generates an 'effective pom' for an artifact.
      * @param artifact the artifact to generate an effective pom of
@@ -341,7 +353,8 @@ public class DefaultModelConverter implements ModelConverter {
     }
 
     @Override
-    public Metadata convert(final MavenProject project, String projectType, CycloneDxSchema.Version schemaVersion, boolean includeLicenseText) {
+	public Metadata convert(final MavenProject project, String projectType, CycloneDxSchema.Version schemaVersion,
+			boolean includeLicenseText, boolean extractCopyrights) {
         final Tool tool = new Tool();
         final Properties properties = readPluginProperties();
         tool.setVendor(properties.getProperty("vendor"));
@@ -367,7 +380,7 @@ public class DefaultModelConverter implements ModelConverter {
         component.setType(resolveProjectType(projectType));
         component.setPurl(generatePackageUrl(project.getArtifact()));
         component.setBomRef(component.getPurl());
-        extractComponentMetadata(project, component, schemaVersion, includeLicenseText);
+        extractComponentMetadata(project, component, schemaVersion, includeLicenseText, extractCopyrights);
 
         final Metadata metadata = new Metadata();
         metadata.addTool(tool);

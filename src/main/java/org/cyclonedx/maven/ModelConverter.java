@@ -46,9 +46,11 @@ public interface ModelConverter {
      * @param artifact the artifact to convert
      * @param schemaVersion the target CycloneDX schema version
      * @param includeLicenseText should license text be included in bom?
+     * @param extractCopyrights whether copyright information should be detected in license and notice files
      * @return a CycloneDX component
      */
-    Component convert(Artifact artifact, CycloneDxSchema.Version schemaVersion, boolean includeLicenseText);
+	Component convert(Artifact artifact, CycloneDxSchema.Version schemaVersion, boolean includeLicenseText,
+			boolean extractCopyrights);
 
     /**
      * Converts a MavenProject into a Metadata object.
@@ -57,7 +59,9 @@ public interface ModelConverter {
      * @param projectType the target CycloneDX component type
      * @param schemaVersion the target CycloneDX schema version
      * @param includeLicenseText should license text be included in bom?
+     * @param extractCopyrights whether copyright information should be detected in license and notice files
      * @return a CycloneDX Metadata object
      */
-    Metadata convert(MavenProject project, String projectType, CycloneDxSchema.Version schemaVersion, boolean includeLicenseText);
+	Metadata convert(MavenProject project, String projectType, CycloneDxSchema.Version schemaVersion,
+			boolean includeLicenseText, boolean extractCopyrights);
 }
